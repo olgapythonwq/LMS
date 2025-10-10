@@ -11,6 +11,9 @@ class Course(models.Model):
         verbose_name = "Course"
         verbose_name_plural = "Courses"
 
+    def __str__(self):
+        return self.name
+
 
 class Lesson(models.Model):
     name = models.CharField(max_length=35, blank=True, null=True, verbose_name="Lesson name",
@@ -26,3 +29,6 @@ class Lesson(models.Model):
     class Meta:
         verbose_name = "Lesson"
         verbose_name_plural = "Lessons"
+
+    def __str__(self):
+        return self.name
