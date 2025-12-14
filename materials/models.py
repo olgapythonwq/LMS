@@ -19,7 +19,7 @@ class Lesson(models.Model):
     name = models.CharField(max_length=35, blank=True, null=True, verbose_name="Lesson name",
                             help_text="Enter lesson name")
     course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True, verbose_name="Course name",
-                               help_text="Choose course")
+                               help_text="Choose course", related_name='lessons')
     preview = models.ImageField(upload_to="materials/lessons/previews", blank=True, null=True,
                                 verbose_name="Lesson preview", help_text="Upload lesson preview")
     description = models.CharField(max_length=255, blank=True, null=True, verbose_name="Lesson description",
