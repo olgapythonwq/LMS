@@ -42,3 +42,18 @@ class Lesson(models.Model):
 
     def __str__(self):
         return self.name or "Unnamed lesson"
+
+
+class Subscription(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Subscriber",
+                             related_name="subscriptions")
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, verbose_name="Course name",
+                               related_name='subscriptions')
+
+    class Meta:
+        verbose_name = "Subscription"
+        verbose_name_plural = "Subscriptions"
+        unique_together = ('user', 'course')
+
+    def __str__(self):
+        return f'{self.user} subscribed for {self.course}'
