@@ -1,21 +1,67 @@
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema_view, extend_schema
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import ListAPIView, CreateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
+from materials.models import Course
+from materials.services import create_stripe_payment, get_stripe_session_status
 from users.filters import PaymentFilter
 from users.models import User, Payment
 from users.permissions import IsSelf
 from users.serializers import UserSerializer, PaymentSerializer, UserPrivateSerializer, UserPublicSerializer
 
 
+@extend_schema_view(
+    post=extend_schema(
+        summary="Create user",
+        description="Creates a new user. Available for everybody.",
+        tags=["Users"],
+        responses={201: UserSerializer},
+    )
+)
 class UserCreateAPIView(CreateAPIView):
     serializer_class = UserSerializer
     queryset = User.objects.all()
     permission_classes = (AllowAny,)  # позволяет неавторизованным пользователям зарегистрироваться
 
 
+@extend_schema_view(
+    list=extend_schema(
+        summary="Get list of users",
+        description="Returns list of all users. Accessible for all users.",
+        tags=["Users"],
+    ),
+    retrieve=extend_schema(
+        summary="Get user details",
+        description="Returns detailed information about a user. Accessible for all users.",
+        tags=["Users"],
+    ),
+    create=extend_schema(
+        summary="Create user",
+        description="Creates a new user. Accessible for all users.",
+        tags=["Users"],
+    ),
+    update=extend_schema(
+        summary="Update user",
+        description="Updates user data. Accessible for owners.",
+        tags=["Users"],
+    ),
+    partial_update=extend_schema(
+        summary="Partial update of user",
+        description="Partially updates user data (PATCH). Accessible for owners.",
+        tags=["Users"],
+    ),
+    destroy=extend_schema(
+        summary="Delete user",
+        description="Deletes a user. Accessible for owners.",
+        tags=["Users"],
+    ),
+)
 class UserViewSet(ModelViewSet):
     queryset = User.objects.all()
     permission_classes = [IsAuthenticated]
@@ -41,6 +87,14 @@ class UserViewSet(ModelViewSet):
         return [IsAuthenticated()]
 
 
+@extend_schema_view(
+    get=extend_schema(
+        summary="Get list of payments",
+        description="Returns filtered and ordered list of payments.",
+        tags=["Payments"],
+        responses={200: PaymentSerializer(many=True)},
+    )
+)
 class PaymentListAPIView(ListAPIView):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
@@ -50,3 +104,59 @@ class PaymentListAPIView(ListAPIView):
 
     ordering_fields = ['payment_date']
     ordering = ['payment_date']  # по умолчанию
+
+
+@extend_schema_view(
+    post=extend_schema(
+        summary="Create payment",
+        description="Creates Stripe payment session and returns payment URL.",
+        tags=["Payments"],
+        request={"application/json": {"type": "object",
+                                      "properties": {"course_id": {"type": "integer"},},
+                                      "required": ["course_id"],
+                                      }
+                 },
+        responses={200: {"type": "object",
+                         "properties": {"payment_url": {"type": "string"},}
+                         }
+                   },
+    )
+)
+class PaymentCreateAPIView(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        course = get_object_or_404(Course, id=request.data["course_id"])
+
+        stripe_data = create_stripe_payment(course)
+
+        payment = Payment.objects.create(
+            user=request.user,
+            course=course,
+            payment_amount=course.price,
+            payment_method=Payment.CARD,
+            stripe_product_id=stripe_data["product_id"],
+            stripe_price_id=stripe_data["price_id"],
+            stripe_session_id=stripe_data["session_id"],
+            payment_url=stripe_data["payment_url"],
+        )
+
+        return Response({"payment_url": payment.payment_url}, status=200,)
+
+
+class PaymentStatusAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Check payment status",
+        description="Returns Stripe payment status for a given payment_id",
+        tags=["Payments"],
+        responses={200: dict}
+    )
+    def get(self, request, payment_id):
+        payment = get_object_or_404(Payment, id=payment_id, user=request.user)
+        if not payment.stripe_session_id:
+            return Response({"error": "Stripe session not found"}, status=404)
+
+        session_data = get_stripe_session_status(payment.stripe_session_id)
+        return Response(session_data)
