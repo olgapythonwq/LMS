@@ -36,4 +36,7 @@ class CourseDetailSerializer(ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ('name', 'preview', 'description', 'count_lessons', 'lessons')
+        fields = "__all__"
+
+class SubscriptionResponseSerializer(serializers.Serializer):
+    message = serializers.CharField()
