@@ -1,0 +1,62 @@
+import stripe
+from django.conf import settings
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
+
+
+def create_stripe_product(course):
+    return stripe.Product.create(
+        name=course.name,
+        description=course.description,
+    )
+
+
+def create_stripe_price(product_id, amount):
+    return stripe.Price.create(
+        product=product_id,
+        unit_amount=int(amount * 100),  # копейки!
+        currency="usd",
+    )
+
+
+def create_stripe_session(price_id):
+    return stripe.checkout.Session.create(
+        payment_method_types=["card"],
+        line_items=[{
+            "price": price_id,
+            "quantity": 1,
+        }],
+        mode="payment",
+        success_url=settings.STRIPE_SUCCESS_URL,
+        cancel_url=settings.STRIPE_CANCEL_URL,
+    )
+
+
+def create_stripe_payment(course):
+    product = create_stripe_product(course)
+    price = create_stripe_price(product.id, course.price)
+    session = create_stripe_session(price.id)
+
+    return {
+        "product_id": product.id,
+        "price_id": price.id,
+        "session_id": session.id,
+        "payment_url": session.url,
+    }
+
+
+def get_stripe_session_status(session_id: str) -> dict:
+    """Получает данные сессии оплаты из Stripe по session_id."""
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+        return {
+            "id": session.id,
+            "payment_status": session.payment_status,  # 'paid', 'unpaid', 'no_payment_required'
+            "amount_total": session.amount_total,
+            "currency": session.currency,
+            "customer_email": session.customer_email,
+            "payment_intent": session.payment_intent,
+        }
+    except stripe.error.StripeError as e:
+        # логируем ошибку, можно вернуть пустой dict или raise
+        return {"error": str(e)}
