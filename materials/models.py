@@ -13,6 +13,7 @@ class Course(models.Model):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
                               verbose_name="Course owner", help_text="Enter the owner of the course",
                               related_name="courses")
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Course price")
 
     class Meta:
         verbose_name = "Course"

@@ -29,21 +29,29 @@ class Payment(models.Model):
 
     CASH = 'cash'
     TRANSFER = 'transfer'
+    CARD = 'card'
 
-    PAYMENT_METHOD_CHOICES = ((CASH, 'Cash payment'), (TRANSFER, 'Bank transfer'),)
+    PAYMENT_METHOD_CHOICES = ((CASH, 'Cash payment'), (TRANSFER, 'Bank transfer'), (CARD, 'Bank card'),)
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, verbose_name="User email",
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+                             verbose_name="Email of user who made the payment",
                              help_text="Enter user email", related_name='payments')
     #не User на случай, если модель пользователя изменится — платежи не сломаются - Best Practice
     payment_date = models.DateTimeField(auto_now_add=True, verbose_name="Payment date")
     course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Course paid',
-                               help_text="Enter course paid")
+                               help_text="Enter course paid")  # История оплат должна сохраняться
     lesson = models.ForeignKey(Lesson, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Lesson paid',
                                help_text="Enter lesson paid")
     payment_amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Payment amount",
                                          help_text="Enter payment amount")
     payment_method = models.CharField(max_length=10, choices=PAYMENT_METHOD_CHOICES, verbose_name='Payment method',
                                       help_text="Choose payment method")
+    stripe_product_id = models.CharField(null=True, blank=True, max_length=500, verbose_name='Stripe product ID')
+    # храним IDs, чтобы можно было проверить статус потом м можно было связать платёж со Stripe
+    stripe_price_id = models.CharField(null=True, blank=True, max_length=500, verbose_name='Stripe price ID')
+    stripe_session_id = models.CharField(null=True, blank=True, max_length=500
+                                         , verbose_name='Stripe session ID')
+    payment_url = models.URLField(null=True, blank=True, verbose_name="Stripe payment URL")
 
     class Meta:
         verbose_name = "Payment"
