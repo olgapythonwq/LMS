@@ -139,6 +139,9 @@ class PaymentCreateAPIView(CreateAPIView):
 
         stripe_data = create_stripe_payment(payment)  # передаём Payment в Stripe
 
+        if not stripe_data:
+            return Response({"error": "Stripe payment creation failed"}, status=400)
+
         # сохраняем Stripe-данные
         payment.stripe_product_id = stripe_data["product_id"]
         payment.stripe_price_id = stripe_data["price_id"]
