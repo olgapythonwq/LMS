@@ -32,11 +32,19 @@ def create_stripe_session(price_id):
     )
 
 
-def create_stripe_payment(course):
-    product = create_stripe_product(course)
-    price = create_stripe_price(product.id, course.price)
-    session = create_stripe_session(price.id)
-
+def create_stripe_payment(payment):
+    product = stripe.Product.create(name=payment.course.name)
+    price = stripe.Price.create(
+        product=product.id,
+        unit_amount=int(payment.payment_amount * 100),
+        currency="usd",
+    )
+    session = stripe.checkout.Session.create(
+        line_items=[{"price": price.id,"quantity": 1,}],
+        mode="payment",
+        success_url="http://localhost:8000/materials/success/",
+        cancel_url="http://localhost:8000/materials/cancel/",
+    )
     return {
         "product_id": product.id,
         "price_id": price.id,

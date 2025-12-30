@@ -123,25 +123,30 @@ class PaymentListAPIView(ListAPIView):
     )
 )
 class PaymentCreateAPIView(CreateAPIView):
+    serializer_class = PaymentSerializer
     permission_classes = [IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
         course = get_object_or_404(Course, id=request.data["course_id"])
 
-        stripe_data = create_stripe_payment(course)
-
+        # Фиксируем сумму платежа
         payment = Payment.objects.create(
             user=request.user,
             course=course,
-            payment_amount=course.price,
+            payment_amount=course.price,  # Фиксируем текущую цену из курса в платёж
             payment_method=Payment.CARD,
-            stripe_product_id=stripe_data["product_id"],
-            stripe_price_id=stripe_data["price_id"],
-            stripe_session_id=stripe_data["session_id"],
-            payment_url=stripe_data["payment_url"],
         )
 
-        return Response({"payment_url": payment.payment_url}, status=200,)
+        stripe_data = create_stripe_payment(payment)  # передаём Payment в Stripe
+
+        # сохраняем Stripe-данные
+        payment.stripe_product_id = stripe_data["product_id"]
+        payment.stripe_price_id = stripe_data["price_id"]
+        payment.stripe_session_id = stripe_data["session_id"]
+        payment.payment_url = stripe_data["payment_url"]
+        payment.save()
+
+        return Response({"payment_url": payment.payment_url}, status=201)
 
 
 class PaymentStatusAPIView(APIView):
