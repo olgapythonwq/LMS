@@ -1,4 +1,7 @@
+from datetime import timedelta
+
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView, UpdateAPIView, DestroyAPIView
 from rest_framework.permissions import IsAuthenticated
@@ -9,7 +12,9 @@ from rest_framework.viewsets import ModelViewSet
 from materials.models import Course, Lesson, Subscription
 from materials.paginators import MyPagination
 from materials.serializers import CourseSerializer, LessonSerializer, CourseDetailSerializer, \
-    SubscriptionResponseSerializer
+    SubscriptionResponseSerializer, SubscriptionSerializer
+from materials.services import notify_course_if_needed
+from materials.tasks import send_course_update_email
 from users.permissions import IsModerator, IsNotModerator, IsOwner
 from django.shortcuts import render
 
@@ -60,6 +65,10 @@ class CourseViewSet(ModelViewSet):
         course = serializer.save()
         course.owner = self.request.user
         course.save()
+
+    def perform_update(self, serializer):
+        course = serializer.save()
+        notify_course_if_needed(course)
 
     def get_permissions(self):
         if self.action == "create":
@@ -137,6 +146,13 @@ class LessonUpdateAPIView(UpdateAPIView):
 
     permission_classes = [IsAuthenticated, IsModerator | IsOwner]
 
+    def perform_update(self, serializer):
+        lesson = serializer.save()
+
+        # считаем, что курс был обновлён
+        if lesson.course:
+            notify_course_if_needed(lesson.course)
+
 
 @extend_schema_view(
     delete=extend_schema(
@@ -149,7 +165,6 @@ class LessonDestroyAPIView(DestroyAPIView):
     queryset = Lesson.objects.all()
 
     permission_classes = [IsAuthenticated, IsNotModerator | IsOwner]
-
 
 class SubscriptionAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -181,6 +196,14 @@ class SubscriptionAPIView(APIView):
 
         # Возвращаем ответ в API
         return Response({"message": message})
+
+
+class SubscriptionListAPIView(ListAPIView):
+    serializer_class = SubscriptionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Subscription.objects.filter(user=self.request.user)
 
 
 def payment_success(request):
