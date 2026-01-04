@@ -40,3 +40,10 @@ class CourseDetailSerializer(ModelSerializer):
 
 class SubscriptionResponseSerializer(serializers.Serializer):
     message = serializers.CharField()
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    course_name = serializers.CharField(source='course.name', read_only=True)
+
+    class Meta:
+        model = Subscription
+        fields = ('id', 'course', 'course_name')

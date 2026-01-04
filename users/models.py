@@ -36,7 +36,7 @@ class Payment(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
                              verbose_name="Email of user who made the payment",
                              help_text="Enter user email", related_name='payments')
-    #не User на случай, если модель пользователя изменится — платежи не сломаются - Best Practice
+    # не User на случай, если модель пользователя изменится — платежи не сломаются - Best Practice
     payment_date = models.DateTimeField(auto_now_add=True, verbose_name="Payment date")
     course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Course paid',
                                help_text="Enter course paid")  # История оплат должна сохраняться

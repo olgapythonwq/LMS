@@ -1,5 +1,10 @@
+from datetime import timedelta
+
 import stripe
 from django.conf import settings
+from django.utils import timezone
+from materials.tasks import send_course_update_email
+
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -68,3 +73,13 @@ def get_stripe_session_status(session_id: str) -> dict:
     except stripe.error.StripeError as e:
         # логируем ошибку, можно вернуть пустой dict или raise
         return {"error": str(e)}
+
+
+def notify_course_if_needed(course):
+    """Отправляет уведомление об обновлении курса, если прошло более 4 часов с последней рассылки."""
+    now = timezone.now()
+
+    if not course.last_notification or now - course.last_notification >= timedelta(minutes=10):
+        send_course_update_email.delay(course.id)
+        course.last_notification = now
+        course.save(update_fields=['last_notification'])
