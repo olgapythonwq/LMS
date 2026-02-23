@@ -115,7 +115,7 @@ class LessonCreateAPIView(CreateAPIView):
 )
 class LessonListAPIView(ListAPIView):
     pagination_class = MyPagination
-    queryset = Lesson.objects.all()
+    queryset = Lesson.objects.all().order_by("id")
     serializer_class = LessonSerializer
 
 
