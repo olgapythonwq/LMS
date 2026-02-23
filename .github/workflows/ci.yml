@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ develop ]
+
+jobs:
+  test:  # Запуск тестов
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U test_user"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      POSTGRES_DB: test_db
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      SECRET_KEY: test-secret-key
+
+    steps:
+      - name: Checkout code  # Получаем код из репозитория
+        uses: actions/checkout@v4
+
+      - name: Set up Python  # Устанавливаем Пайтон нужной версии
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies  # Устанавливаем зависимости проекта
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run flake8  # Запускаем flake8
+        run: flake8 .
+
+      - name: Run isort check  # Запускаем isort
+        run: isort . --check-only
+
+      - name: Run tests  # Запускаем тесты
+        run: pytest
