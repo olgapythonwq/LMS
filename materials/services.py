@@ -3,8 +3,8 @@ from datetime import timedelta
 import stripe
 from django.conf import settings
 from django.utils import timezone
-from materials.tasks import send_course_update_email
 
+from materials.tasks import send_course_update_email
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -45,7 +45,7 @@ def create_stripe_payment(payment):
         currency="usd",
     )
     session = stripe.checkout.Session.create(
-        line_items=[{"price": price.id,"quantity": 1,}],
+        line_items=[{"price": price.id, "quantity": 1, }],
         mode="payment",
         success_url="http://localhost:8000/materials/success/",
         cancel_url="http://localhost:8000/materials/cancel/",

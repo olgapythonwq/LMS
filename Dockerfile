@@ -7,10 +7,12 @@ WORKDIR /app
 # Устанавливаем зависимости системы
 RUN apt-get update && apt-get install -y gcc libpq-dev && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Копируем файл зависимостей в контейнер
+# Копируем файлы зависимостей в контейнер
 COPY requirements.txt ./
+COPY requirements-dev.txt ./
+
 # Устанавливаем зависимости Python
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && pip install -r requirements-dev.txt
 
 # Копируем исходный код приложения в контейнер
 COPY . .

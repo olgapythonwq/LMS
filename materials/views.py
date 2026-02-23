@@ -1,9 +1,12 @@
-from datetime import timedelta
-
-from django.shortcuts import get_object_or_404
-from django.utils import timezone
+from django.shortcuts import get_object_or_404, render
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView, UpdateAPIView, DestroyAPIView
+from rest_framework.generics import (
+    CreateAPIView,
+    DestroyAPIView,
+    ListAPIView,
+    RetrieveAPIView,
+    UpdateAPIView,
+)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -11,12 +14,15 @@ from rest_framework.viewsets import ModelViewSet
 
 from materials.models import Course, Lesson, Subscription
 from materials.paginators import MyPagination
-from materials.serializers import CourseSerializer, LessonSerializer, CourseDetailSerializer, \
-    SubscriptionResponseSerializer, SubscriptionSerializer
+from materials.serializers import (
+    CourseDetailSerializer,
+    CourseSerializer,
+    LessonSerializer,
+    SubscriptionResponseSerializer,
+    SubscriptionSerializer,
+)
 from materials.services import notify_course_if_needed
-from materials.tasks import send_course_update_email
 from users.permissions import IsModerator, IsNotModerator, IsOwner
-from django.shortcuts import render
 
 
 @extend_schema_view(
@@ -166,6 +172,7 @@ class LessonDestroyAPIView(DestroyAPIView):
 
     permission_classes = [IsAuthenticated, IsNotModerator | IsOwner]
 
+
 class SubscriptionAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -173,7 +180,7 @@ class SubscriptionAPIView(APIView):
         summary="Subscribe / unsubscribe to course",
         description="Creates or deletes a subscription to a course.",
         tags=["Subscriptions"],
-        request={"application/json": {"type": "object","properties": {"course_id": {"type": "integer"},},
+        request={"application/json": {"type": "object", "properties": {"course_id": {"type": "integer"}, },
                                       "required": ["course_id"],
                                       },
                  },
@@ -208,6 +215,7 @@ class SubscriptionListAPIView(ListAPIView):
 
 def payment_success(request):
     return render(request, "materials/success.html")
+
 
 def payment_cancel(request):
     return render(request, "materials/cancel.html")

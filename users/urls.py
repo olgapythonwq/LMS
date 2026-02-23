@@ -1,11 +1,15 @@
 from django.urls import path
-
 from rest_framework.routers import SimpleRouter
-
-from users.apps import UsersConfig
-from users.views import UserViewSet, PaymentListAPIView, UserCreateAPIView, PaymentCreateAPIView, PaymentStatusAPIView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+from users.apps import UsersConfig
+from users.views import (
+    PaymentCreateAPIView,
+    PaymentListAPIView,
+    PaymentStatusAPIView,
+    UserCreateAPIView,
+    UserViewSet,
+)
 
 app_name = UsersConfig.name
 
