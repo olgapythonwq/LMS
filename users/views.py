@@ -1,8 +1,8 @@
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.utils import extend_schema_view, extend_schema
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework.filters import OrderingFilter
-from rest_framework.generics import ListAPIView, CreateAPIView
+from rest_framework.generics import CreateAPIView, ListAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -11,9 +11,14 @@ from rest_framework.viewsets import ModelViewSet
 from materials.models import Course
 from materials.services import create_stripe_payment, get_stripe_session_status
 from users.filters import PaymentFilter
-from users.models import User, Payment
+from users.models import Payment, User
 from users.permissions import IsSelf
-from users.serializers import UserSerializer, PaymentSerializer, UserPrivateSerializer, UserPublicSerializer
+from users.serializers import (
+    PaymentSerializer,
+    UserPrivateSerializer,
+    UserPublicSerializer,
+    UserSerializer,
+)
 
 
 @extend_schema_view(
@@ -112,12 +117,12 @@ class PaymentListAPIView(ListAPIView):
         description="Creates Stripe payment session and returns payment URL.",
         tags=["Payments"],
         request={"application/json": {"type": "object",
-                                      "properties": {"course_id": {"type": "integer"},},
+                                      "properties": {"course_id": {"type": "integer"}, },
                                       "required": ["course_id"],
                                       }
                  },
         responses={200: {"type": "object",
-                         "properties": {"payment_url": {"type": "string"},}
+                         "properties": {"payment_url": {"type": "string"}, }
                          }
                    },
     )

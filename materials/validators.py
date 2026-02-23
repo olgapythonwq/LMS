@@ -1,6 +1,5 @@
 from rest_framework import serializers
 
-
 ALLOWED_DOMAINS = ['youtube.com', 'youtu.be']
 
 

@@ -20,26 +20,30 @@ class CourseSerializer(ModelSerializer):
         model = Course
         fields = "__all__"
 
+
 class LessonSerializer(ModelSerializer):
-    video_link = serializers.URLField(required=False, allow_null=True,validators=[validate_video_link])
+    video_link = serializers.URLField(required=False, allow_null=True, validators=[validate_video_link])
 
     class Meta:
         model = Lesson
         fields = "__all__"
+
 
 class CourseDetailSerializer(ModelSerializer):
     count_lessons = SerializerMethodField()
     lessons = LessonSerializer(many=True, read_only=True)
 
     def get_count_lessons(self, course):
-        return Lesson.objects.filter(course=course).count()  #БД возвращает количество
+        return Lesson.objects.filter(course=course).count()  # БД возвращает количество
 
     class Meta:
         model = Course
         fields = "__all__"
 
+
 class SubscriptionResponseSerializer(serializers.Serializer):
     message = serializers.CharField()
+
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     course_name = serializers.CharField(source='course.name', read_only=True)
