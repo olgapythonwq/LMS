@@ -24,6 +24,13 @@ The application is designed to run as a multi-container system using Docker Comp
 [Admin Panel](#admin-panel) 
 [Background Tasks](#background-tasks)  
 [Summary](#summary)  
+[CI/CD (GitHub Actions)](#CI/CD-(GitHub Actions))  
+[CI Pipeline](#CI Pipeline)  
+[Automatic Deployment (CD)](#Automatic Deployment-(CD))  
+[Server Requirements](#Server Requirements)  
+[Environment Configuration on Server](#Environment Configuration on Server)  
+[Production URL](#Production URL) 
+[One-Command Local Launch](#One-Command Local Launch) 
 [Project Status](#project-status)  
 [Author](#author)
 
@@ -290,6 +297,99 @@ After startup:
 - Django API is available at http://localhost:8000
 - PostgreSQL, Redis, Celery, and Beat are automatically connected
 - All services can be monitored via docker compose ps and docker compose logs
+
+## CI/CD (GitHub Actions)
+Continuous Integration and Continuous Deployment are implemented using GitHub Actions.
+
+### CI Pipeline
+The CI workflow automatically runs on every:
+- push to the develop branch
+- pull request targeting develop
+The pipeline performs the following steps:
+1.	Sets up Python 3.13
+2.	Installs project dependencies
+3.	Runs code linting:
+        - flake8
+        - isort --check-only
+4.	Runs automated tests using pytest
+5.	Verifies Docker image build (docker build)
+If any step fails, the pipeline stops and deployment is not triggered.
+
+### Automatic Deployment (CD)
+After a successful CI run on the develop branch, the project is automatically deployed to a remote Ubuntu server.
+Deployment is performed via SSH using GitHub Actions and includes:
+1.	Connecting to the remote server via SSH
+2.	Fetching latest changes from develop
+3.	Rebuilding Docker images
+4.	Restarting containers with Docker Compose
+Deployment script executed on the server:
+```bash
+  git fetch origin
+  git checkout develop
+  git pull origin develop
+  docker compose down
+  docker compose up -d --build
+```
+This ensures:
+- The latest version of the application is deployed
+- Containers are rebuilt with updated code
+- Services are restarted cleanly
+
+### Remote Server Setup
+The application is deployed on a virtual machine running Ubuntu.
+Server Requirements
+- Ubuntu 22.04+
+- Docker installed
+- Docker Compose installed
+- Git installed
+- SSH access enabled
+Initial Server Setup Steps
+1.	Install Docker and Docker Compose
+2.	Install Git
+3.	Clone the repository
+4.	Create a .env file with production variables
+5.	Run:
+```bash
+  docker compose up -d --build
+```
+After this initial setup, all further deployments are fully automated via GitHub Actions.
+
+### Environment Configuration on Server
+The .env file is stored only on the server and is not committed to the repository.
+Example production variables:
+```bash
+  POSTGRES_DB=prod_db
+  POSTGRES_USER=prod_user
+  POSTGRES_PASSWORD=password
+  POSTGRES_HOST=db
+  POSTGRES_PORT=5432
+
+  SECRET_KEY=your_secret_key
+  DJANGO_ENV=prod
+  ALLOWED_HOSTS=<SERVER_IP>
+```
+
+### Production URL
+The deployed application is available at:
+```bash
+  http://<SERVER_IP>
+```
+(Replace <SERVER_IP> with the actual server address.)
+
+### One-Command Local Launch
+The entire system can be started locally using a single command:
+```bash
+  docker compose up -d --build
+```
+This launches:
+- Django
+- PostgreSQL
+- Redis
+- Celery Worker
+- Celery Beat
+
+All services are connected automatically.
+
 
 ## Project Status
 - [x] Completed

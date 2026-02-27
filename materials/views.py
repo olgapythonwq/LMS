@@ -59,7 +59,7 @@ from users.permissions import IsModerator, IsNotModerator, IsOwner
     ),
 )
 class CourseViewSet(ModelViewSet):
-    queryset = Course.objects.all()
+    queryset = Course.objects.all().order_by("id")
     pagination_class = MyPagination
 
     def get_serializer_class(self):
@@ -115,7 +115,7 @@ class LessonCreateAPIView(CreateAPIView):
 )
 class LessonListAPIView(ListAPIView):
     pagination_class = MyPagination
-    queryset = Lesson.objects.all()
+    queryset = Lesson.objects.all().order_by("id")
     serializer_class = LessonSerializer
 
 
